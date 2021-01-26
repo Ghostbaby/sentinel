@@ -3,6 +3,7 @@ package work
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -138,5 +139,22 @@ func PinCnResult(log logr.Logger, ip, taskID string) (*models.WorkResult, error)
 		Max:  result.Data.InitData.MinMaxAvg.Max.Cost,
 		Min:  result.Data.InitData.MinMaxAvg.Min.Cost,
 		Avg:  result.Data.InitData.MinMaxAvg.Avg.Cost,
+		Loss: PingCnLost(result.Data.InitData.Result),
 	}, nil
+}
+
+func PingCnLost(result []*models.PingCnResultInfo) float64 {
+	var (
+		packets, received int
+	)
+
+	for _, info := range result {
+		packets += info.Packets
+		received += info.Received
+	}
+
+	p, _ := strconv.ParseFloat(strconv.Itoa(packets), 64)
+	r, _ := strconv.ParseFloat(strconv.Itoa(received), 64)
+
+	return 1 - (r / p)
 }

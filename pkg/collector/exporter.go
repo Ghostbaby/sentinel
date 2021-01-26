@@ -10,6 +10,12 @@ type Collector struct {
 	metrics map[string]*prometheus.Desc
 }
 
+const (
+	LatencyMaxType = "max"
+	LatencyMinType = "min"
+	LatencyAvgType = "avg"
+)
+
 // NewHarborCollector creates an HarborCollector.
 func NewCollector(namespace string) *Collector {
 	return &Collector{
@@ -20,6 +26,10 @@ func NewCollector(namespace string) *Collector {
 				"host network min latency", []string{"host", "url"}),
 			"sentinel_network_latency_avg": newGlobalMetric(namespace, "sentinel_network_latency_avg",
 				"host network avg latency", []string{"host", "url"}),
+			"sentinel_network_latency_loss": newGlobalMetric(namespace, "sentinel_network_latency_loss",
+				"host network loss", []string{"host", "url"}),
+			"sentinel_network_latency": newGlobalMetric(namespace, "sentinel_network_latency",
+				"host network all latency", []string{"host", "url", "type"}),
 		},
 	}
 }
@@ -47,6 +57,18 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 		ch <- prometheus.MustNewConstMetric(c.metrics["sentinel_network_latency_avg"],
 			prometheus.GaugeValue, v.Avg, v.Host, v.Name)
+
+		ch <- prometheus.MustNewConstMetric(c.metrics["sentinel_network_latency_loss"],
+			prometheus.GaugeValue, v.Loss, v.Host, v.Name)
+
+		ch <- prometheus.MustNewConstMetric(c.metrics["sentinel_network_latency"],
+			prometheus.GaugeValue, v.Avg, v.Host, v.Name, LatencyAvgType)
+
+		ch <- prometheus.MustNewConstMetric(c.metrics["sentinel_network_latency"],
+			prometheus.GaugeValue, v.Max, v.Host, v.Name, LatencyMaxType)
+
+		ch <- prometheus.MustNewConstMetric(c.metrics["sentinel_network_latency"],
+			prometheus.GaugeValue, v.Min, v.Host, v.Name, LatencyMinType)
 	}
 }
 

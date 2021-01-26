@@ -23,6 +23,13 @@ type PingCnResult struct {
 	Data *PingCnResultData `json:"data"` // 返回探测结果
 }
 
+type PingCnResultInfo struct {
+	NodeName   string `json:"node_name"`
+	Packets    int    `json:"packets"`
+	Received   int    `json:"received"`
+	PacketLoss int    `json:"packet_loss"`
+}
+
 type PingCnResultData struct {
 	Cost     float64              `json:"cost"`     // 返回执行耗时
 	InitData PingCnResultInitData `json:"initData"` // 聚合数据
@@ -30,6 +37,7 @@ type PingCnResultData struct {
 
 type PingCnResultInitData struct {
 	MinMaxAvg PingCnResultMinMaxAvg `json:"minMaxAvg"` // 返回最低、最高、平均延迟
+	Result    []*PingCnResultInfo   `json:"result"`
 }
 
 type PingCnResultMinMaxAvg struct {

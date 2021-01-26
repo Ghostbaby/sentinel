@@ -9,6 +9,7 @@ type WorkResult struct {
 	Max  float64 `json:"max"`  // 最高延迟
 	Min  float64 `json:"min"`  // 最低延迟
 	Avg  float64 `json:"avg"`  // 平均延迟
+	Loss float64 `json:"lost"`
 }
 
 const (
