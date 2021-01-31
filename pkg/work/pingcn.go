@@ -22,13 +22,13 @@ func PingCn() []*models.WorkResult {
 	log := ctrl.Log.WithName("controllers").WithName("sentinel").WithName("ping.cn")
 
 	chJobs := make(chan *models.Job, len(config.IPS))
-	chResults := make(chan *models.Result, len(config.IPS))
+	chResults := make(chan *models.ScopeResult, len(config.IPS))
 
 	for w := 1; w <= config.Routines; w++ {
 		go PinCnWork(chJobs, chResults)
 	}
 
-	for _, ip := range config.IPS {
+	for ip, _ := range config.IPS {
 		job := &models.Job{
 			Log:        log,
 			IP:         ip,
@@ -50,10 +50,10 @@ func PingCn() []*models.WorkResult {
 	return list
 }
 
-func PinCnWork(jobs <-chan *models.Job, results chan<- *models.Result) {
+func PinCnWork(jobs <-chan *models.Job, results chan<- *models.ScopeResult) {
 	for j := range jobs {
 
-		var res models.Result
+		var res models.ScopeResult
 		rt := j.RetryTimes
 
 		for {
@@ -108,6 +108,8 @@ func PinCnTask(log logr.Logger, ip string) (string, error) {
 }
 
 func PinCnResult(log logr.Logger, ip, taskID string) (*models.WorkResult, error) {
+
+	config := g.Config()
 	client := c.NewBaseClient(models.PingCnUrl, 0)
 	w := NewWork(client, log)
 	log.Info("start to get result", "host", ip, "task", taskID)
@@ -133,28 +135,54 @@ func PinCnResult(log logr.Logger, ip, taskID string) (*models.WorkResult, error)
 
 	log.Info("success to get result", "url", models.PingCnUrl, "host", ip, "task", taskID)
 
+	ipd, ok := config.IPS[ip]
+	if !ok {
+		log.Error(errors.New("fail to get link name"), "LineNameMap is not exist ",
+			"host", ip, "task", taskID)
+	}
+
+	loss, details := PingCnLost(result.Data.InitData.Result)
+
 	return &models.WorkResult{
-		Name: models.PingCnUrl,
-		Host: ip,
-		Max:  result.Data.InitData.MinMaxAvg.Max.Cost,
-		Min:  result.Data.InitData.MinMaxAvg.Min.Cost,
-		Avg:  result.Data.InitData.MinMaxAvg.Avg.Cost,
-		Loss: PingCnLost(result.Data.InitData.Result),
+		Provider: models.PingCnUrl,
+		Name:     ipd.Describe,
+		Host:     ip,
+		Max:      result.Data.InitData.MinMaxAvg.Max.Cost,
+		Min:      result.Data.InitData.MinMaxAvg.Min.Cost,
+		Avg:      result.Data.InitData.MinMaxAvg.Avg.Cost,
+		Loss:     loss,
+		Details:  details,
 	}, nil
 }
 
-func PingCnLost(result []*models.PingCnResultInfo) float64 {
+func PingCnLost(result []*models.PingCnResultInfo) (float64, []*models.ResultDetails) {
 	var (
 		packets, received int
+		details           []*models.ResultDetails
 	)
 
 	for _, info := range result {
 		packets += info.Packets
 		received += info.Received
+
+		p, _ := strconv.ParseFloat(strconv.Itoa(info.Packets), 64)
+		r, _ := strconv.ParseFloat(strconv.Itoa(info.Received), 64)
+
+		d := &models.ResultDetails{
+			Name:    info.NodeName,
+			Loss:    1 - (r / p),
+			Max:     info.Max,
+			Min:     info.Min,
+			Avg:     info.Avg,
+			Area:    info.Area,
+			IspName: info.IspName,
+		}
+
+		details = append(details, d)
 	}
 
 	p, _ := strconv.ParseFloat(strconv.Itoa(packets), 64)
 	r, _ := strconv.ParseFloat(strconv.Itoa(received), 64)
 
-	return 1 - (r / p)
+	return 1 - (r / p), details
 }

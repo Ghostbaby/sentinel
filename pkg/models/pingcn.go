@@ -24,10 +24,15 @@ type PingCnResult struct {
 }
 
 type PingCnResultInfo struct {
-	NodeName   string `json:"node_name"`
-	Packets    int    `json:"packets"`
-	Received   int    `json:"received"`
-	PacketLoss int    `json:"packet_loss"`
+	NodeName   string  `json:"node_name"`
+	Packets    int     `json:"packets"`
+	Received   int     `json:"received"`
+	PacketLoss int     `json:"packet_loss"`
+	Max        float64 `json:"max"`
+	Min        float64 `json:"min"`
+	Avg        float64 `json:"avg"`
+	Area       string  `json:"area"`
+	IspName    string  `json:"isp_name"`
 }
 
 type PingCnResultData struct {

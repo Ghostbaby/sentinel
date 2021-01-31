@@ -11,9 +11,16 @@ import (
 )
 
 type GlobalConfig struct {
-	IPS        []string `json:"ips"`
-	Routines   int      `json:"routines"`
-	RetryTimes int      `json:"retry_times"`
+	IPS        map[string]IP `json:"ips"`
+	Routines   int           `json:"routines"`
+	RetryTimes int           `json:"retry_times"`
+	IdRsa      string        `json:"id_rsa"`
+	ScpFile    string        `json:"scp_file"`
+}
+
+type IP struct {
+	Describe string `json:"describe"`
+	Port     string `json:"port"`
 }
 
 var (
