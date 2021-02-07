@@ -40,7 +40,7 @@ func Scp() []*models.ScpResult {
 		job := &models.Job{
 			Log:        log,
 			IP:         ip,
-			RetryTimes: config.RetryTimes,
+			RetryTimes: 0,
 		}
 		chJobs <- job
 	}
